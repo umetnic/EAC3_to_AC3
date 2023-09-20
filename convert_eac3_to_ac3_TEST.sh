@@ -49,7 +49,9 @@ convert_mkv_file() {
                 # Check if the output file already exists before running ffmpeg
                 if [ ! -f "$output_file" ]; then
                     # Extract the audio file using FFmpeg without overwriting
-                    ffmpeg -n -i "$input_file" -vn -c:a ac3 -ac 6 -ar 48000 "$output_file"
+                    #ffmpeg -loglevel debug -n -i "$input_file" -vn -c:a ac3 -ac 6 -ar 48000 "$output_file"
+                    ffmpeg -loglevel debug -n -i "$input_file" -vn -c:a ac3 -ac 6 -ar 48000 "$output_file" 2>&1 | grep -E 'Opening an input file:|Stream.* (Video|Audio)'
+                    #ffmpeg -loglevel debug -n -i "$input_file" -vn -c:a ac3 -ac 6 -ar 48000 "$output_file" 2>&1 | grep -E 'Input file #0|Output file #0|Stream #0|Output #0'
 
                     # Add the converted file name to the list
                     converted_files+=("$filename")

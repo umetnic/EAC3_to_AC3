@@ -6,12 +6,16 @@
 cd "$(dirname "$0")"
 # This line changes the working directory of the script to the directory where the script itself is located.
 
-# Specify the input folder and output folder
-input_folder="/media/server/MEDIA"
-output_folder="/media/server/MEDIA"
-log_file="$output_folder/converted_files.log" 
-skipped_log_file="$output_folder/skipped_files.log" 
-# These lines set variables for the input and output directories and the log files location.
+# Read the input folder from eac3_to_ac3.ini
+input_folder=$(cat eac3_to_ac3.ini)
+# This line reads the input folder path from the input_folder.log file.
+
+# Specify the output folder as the same as the input folder
+output_folder="$input_folder"
+log_file="$output_folder/converted_files.log"
+skipped_log_file="$output_folder/skipped_files.log"
+# These lines set variables for the output directories and the log files location.
+
 
 # Function to convert an MKV file
 convert_mkv_file() {

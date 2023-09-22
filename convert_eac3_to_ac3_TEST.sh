@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # This line specifies that the script should be executed using the Bash shell.
@@ -7,17 +6,21 @@
 cd "$(dirname "$0")"
 # This line changes the working directory of the script to the directory where the script itself is located.
 
-# Read the input folder from eac3_to_ac3.ini
-input_folder=$(cat eac3_to_ac3.ini)
-# This line reads the input folder path from the input_folder.log file.
+# Read the input folders from eac3_to_ac3.ini and store them in an array
+mapfile -t input_folders < <(grep -v '^#' eac3_to_ac3.ini)
 
-# Specify the output folder as the same as the input folder
-output_folder="$input_folder"
-log_file="$output_folder/converted_files.log"
-skipped_log_file="$output_folder/skipped_files.log"
-# These lines set variables for the output directories and the log files location.
+# Loop through each input folder path and process it
+for input_folder in "${input_folders[@]}"; do
+    # Verify that the input_folder variable contains the correct value
+    echo -e "\n" # Just a new line to make things clearer to see    
+	echo -e "Input Folder: \e[1;33m$input_folder\e[0m"
 
- echo -e "\n" # Just a new line to make things clearer to see
+    # Specify the output folder as the same as the input folder
+    output_folder="$input_folder"
+    log_file="$output_folder/converted_files.log"
+    skipped_log_file="$output_folder/skipped_files.log"
+    
+    echo -e "\n" # Just a new line to make things clearer to see
 
 # Function to convert an MKV file
 convert_mkv_file() {
@@ -29,10 +32,10 @@ convert_mkv_file() {
     extension="${filename##*.}"
 
     # Check if the file has been converted before
-    if [[ ! " ${converted_files[*]} " =~ " $filename " ]]; then
+    if [[ ! " ${converted_files[*]} " =~ " $input_file " ]]; then
 
         # Use ffprobe to analyze the input file and get detailed audio stream information
-        audio_info=$(ffprobe -v error -select_streams a -show_entries stream=index,codec_name,channels:stream_tags=language -of csv=p=0 "$input_file")
+        audio_info=$(ffprobe -v error -select_streams a -show_entries stream=index,codec_name,channels,bit_rate:stream_tags=language -of csv=p=0 "$input_file")
 
         # Read audio stream information into an array
         IFS=$'\n' read -d '' -r -a audio_info_array <<< "$audio_info"
@@ -43,7 +46,18 @@ convert_mkv_file() {
             stream_index="${stream_info_array[0]}"
             codec_name="${stream_info_array[1]}"
             num_channels="${stream_info_array[2]}"
-            language_tag="${stream_info_array[3]}"
+            bit_rate_bps="${stream_info_array[3]}"  # Bitrate in bps
+            language_tag="${stream_info_array[4]}"
+
+
+            # Check if bit_rate_bps is a valid numeric value
+            if [[ "$bit_rate_bps" =~ ^[0-9]+$ ]]; then
+                # Convert the bitrate from bps to kb/s
+                bit_rate_kbps=$((bit_rate_bps / 1000))
+            else
+                # Handle the case where bit_rate_bps is not a valid numeric value
+                bit_rate_kbps="N/A"
+            fi
 
             # Check if the audio stream codec is 'eac3'
             if [[ "$codec_name" =~ eac3 ]]; then
@@ -53,27 +67,28 @@ convert_mkv_file() {
                 # Check if the output file already exists before running ffmpeg
                 if [ ! -f "$output_file" ]; then
                     # Extract the audio stream using FFmpeg without overwriting
-						# Print the current file being processed
-						echo -e "\n" 
-						echo -e "Processing file: \e[32m$filename\e[0m"
-                    ffmpeg -loglevel info -n -i "$input_file" -map "0:${stream_index}" -c:a ac3 -ac "$num_channels" -ar 48000 "$output_file" 2>&1 | grep -E 'Input #0|Stream.* (Audio)|Output file #0 ->'
-
-                    # Add the converted file name to the list
-                    converted_files+=("$filename")
-
-                    # Add the filename to the list of files converted in this run
-                    files_converted_this_run+=("$filename")
-
-                    # Write the name of the successfully converted file to the log file
-                    echo "$filename" >> "$log_file"
-
+                    # Print the current file being processed
+                    echo -e "\n" 
+                    echo -e "Processing file: \e[32m$input_file\e[0m"
                     # Print information about the audio stream to the terminal in yellow
-                    echo -e "\e[33mAudio stream info for $filename:\e[0m"
+                    
                     echo -e "\e[33mStream Index: $stream_index\e[0m"
                     echo -e "\e[33mCodec Name: $codec_name\e[0m"
                     echo -e "\e[33mNumber of Channels: $num_channels\e[0m"
+                    echo -e "\e[33mBitrate: $bit_rate_kbps kb/s\e[0m"  
                     echo -e "\e[33mLanguage Tag: $language_tag\e[0m"
-                    echo ""
+					echo ""
+                    				
+                    ffmpeg -loglevel info -n -i "$input_file" -map "0:${stream_index}" -c:a ac3 -b:a "${bit_rate_kbps}k" -ac "$num_channels" -ar 48000 "$output_file" 2>&1 | grep -E 'Stream.* (Audio)|Output file #0 ->'
+
+                    # Write the complete path of the successfully converted file to the log file
+                    echo "$input_file" >> "$log_file"
+
+                    # Add the converted file name to the list
+                    converted_files+=("$input_file")
+
+                    # Add the filename to the list of files converted in this run
+                    files_converted_this_run+=("$input_file")
 
                     # Increment the newly converted files count
                     newly_converted_files=$((newly_converted_files + 1))
@@ -81,36 +96,36 @@ convert_mkv_file() {
                     # Print a message indicating that the file already exists and won't be overwritten
                     echo -e "Skipping existing file:\e[96m\e[1m$output_file\e[0m"
 
-                    # Log the skipped file in the skipped_files.log
-                    echo "Skipped file (already exists): $filename" >> "$skipped_log_file"
+                    # Log the skipped file in the skipped_files.log with the complete path
+                    echo "$input_file" >> "$skipped_log_file"
                 fi
             fi
         done
     fi
 }
 
-# Function to process files in a directory (including subdirectories)
-process_files_in_directory() {
-    local input_dir="$1"
-    local output_dir="$2"
-    
-    # Create the output directory if it doesn't exist
-    mkdir -p "$output_dir"
-    
-    # Loop through all files and directories in the specified directory
-    for entry in "$input_dir"/*; do
-        if [[ -d "$entry" ]]; then
-            # If it's a directory, recursively process its contents
-            local subdirectory_name=$(basename "$entry")
-            process_files_in_directory "$entry" "$output_dir/$subdirectory_name"
-        elif [[ -f "$entry" ]]; then
-            # If it's a file, check if it's an MKV file and convert if eligible
-            if [[ "$entry" =~ \.mkv$ ]]; then
-                convert_mkv_file "$entry" "$output_dir"
+    # Function to process files in a directory (including subdirectories)
+    process_files_in_directory() {
+        local input_dir="$1"
+        local output_dir="$2"
+        
+        # Create the output directory if it doesn't exist
+        mkdir -p "$output_dir"
+        
+        # Loop through all files and directories in the specified directory
+        for entry in "$input_dir"/*; do
+            if [[ -d "$entry" ]]; then
+                # If it's a directory, recursively process its contents
+                local subdirectory_name=$(basename "$entry")
+                process_files_in_directory "$entry" "$output_dir/$subdirectory_name"
+            elif [[ -f "$entry" ]]; then
+                # If it's a file, check if it's an MKV file and convert if eligible
+                if [[ "$entry" =~ \.mkv$ ]]; then
+                    convert_mkv_file "$entry" "$output_dir"
+                fi
             fi
-        fi
-    done
-}
+        done
+    }
 
     # Create the log file if it doesn't exist
     touch "$log_file"
@@ -137,15 +152,16 @@ process_files_in_directory() {
     # Notify of new files conversions
     if [[ $newly_converted_files -eq 0 ]]; then
         # Print in green color
-		echo -e "\n"
+        echo -e "\n"
         echo -e "\e[32mNo new files to convert.\e[0m"
         # You can also add additional notification methods here, like sending an email or using a system notification.
     else
         # Print in green color
-		echo -e "\n"
+        echo -e "\n"
         echo -e "\e[32mConverted files on this run:\e[0m"
         for converted_filename in "${files_converted_this_run[@]}"; do
             # Print in yellow color
             echo -e "\e[33m$converted_filename\e[0m"
         done
     fi 
+done

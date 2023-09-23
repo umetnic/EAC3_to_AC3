@@ -27,3 +27,44 @@ Before using the `eac3-to-ac3-converter` script, ensure that you have the follow
 
    ```bash
    git clone https://github.com/umetnic/EAC3_to_AC3.git
+
+2. Navigate to the script's directory:
+   ```bash
+   cd eac3-to-ac3-converter
+
+3. Make the script executable:
+   ```bash
+   chmod +x eac3_to_ac3.sh
+
+4. Edit the eac3_to_ac3.ini file to specify the input folders. Add the absolute paths of the directories you want to scan, one per line. You can exclude comments by prefixing lines with #.
+
+5. Run the script:
+   ```bash
+   ./eac3_to_ac3.sh
+
+The script will process the specified folders and their subfolders, converting eac3 audio streams in MKV files to AC-3 format. Converted files will be saved in the same directories with language tags appended to their names.
+
+Configuration
+
+You can modify the script's behavior by editing the following variables in the script:
+
+    output_folder: You can customize the output folder for converted files.
+
+    bit_rate_kbps: Change the desired bitrate for the AC-3 audio stream if needed.
+
+Logging
+
+The script creates two log files in each input folder:
+
+    converted_files.log: Lists the paths of successfully converted files.
+    skipped_files.log: Lists the paths of files that were skipped because they already had AC-3 audio streams.
+
+License
+
+This script is licensed under the MIT License.
+Acknowledgments
+
+The script uses FFmpeg, an open-source multimedia framework.
+Issues and Contributions
+
+If you encounter any issues or have suggestions for improvements, please create an issue on the GitHub repository. Contributions and pull requests are welcome!

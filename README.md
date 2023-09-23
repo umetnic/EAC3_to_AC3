@@ -11,6 +11,15 @@ The **EAC3 to AC3 Converter** script is a Bash tool designed to automate the con
 - Automatic detection of previously converted files to avoid duplication.
 - Detailed logging of converted and skipped files.
 
+**2Do**
+1. automatically run the script when new files are detected.
+  Some ideas:
+   - rtorrent invokes the script when download is finished
+   - when system finishes copying/moving files to the watched folders, script is notified and extracts the audio...look into inotifywait.
+2. decide how to process/(notify user?) problematic files like zero size, etc...
+3. properly handle partial ac3 files from unfinished conversions. Now these are just skipped.
+  
+
 ## Dependencies
 
 Before using the **EAC3 to AC3 Converter** script, ensure that you have the following dependencies installed on your system:
@@ -47,25 +56,22 @@ The script will process the specified folders and their subfolders, converting e
 
 ## Configuration
 
-You can modify the script's behavior by editing the following variables in the script:
-
-    output_folder: You can customize the output folder for converted files.
-
-    bit_rate_kbps: Change the desired bitrate for the AC-3 audio stream if needed.
+Edit the **eac3_to_ac3.ini** file to specify the input folders. Add the absolute paths of the directories you want to scan, one per line. You can exclude comments by prefixing lines with #.
 
 ## Logging
 
 The script creates two log files in each input folder:
 
-    converted_files.log: Lists the paths of successfully converted files.
-    skipped_files.log: Lists the paths of files that were skipped because they already had AC-3 audio streams.
+**converted_files.log** - Lists the paths of successfully converted files.
 
-License
+**skipped_files.log** - Lists the paths of files that were skipped because they already had AC-3 audio streams.
+
+## License
 
 This script is licensed under the MIT License.
-Acknowledgments
+## Acknowledgments
 
 The script uses FFmpeg, an open-source multimedia framework.
-Issues and Contributions
+## Issues and Contributions
 
 If you encounter any issues or have suggestions for improvements, please create an issue on the GitHub repository. Contributions and pull requests are welcome!

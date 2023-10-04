@@ -16,9 +16,9 @@ The **EAC3 to AC3 Converter** script is a Bash tool designed to automate the con
   Some ideas:
    - rtorrent invokes the script when download is finished
    - when system finishes copying/moving files to the watched folders, script is notified and extracts the audio...look into inotifywait.
-2. decide how to process/(notify user?) problematic files like zero size, etc...
-3. properly handle partial ac3 files from unfinished conversions. Now these are just skipped.
-  
+2. decide how to process/(notify user?) problematic files like zero size, etc... Done
+3. properly handle partial ac3 files from unfinished conversions. Now these are just skipped. For now I added a setting to skip original log file.
+4. stuff in 2do section of ini fali...  
 
 ## Dependencies
 
